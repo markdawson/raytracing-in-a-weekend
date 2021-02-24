@@ -4,38 +4,39 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <string>
 
-bool hit_sphere(const point3 &center, double radius, const ray &r) {
+double hit_sphere(const point3 &center, double radius, const ray &r) {
     vec3 oc = r.origin() - center;
-    auto a = dot(r.direction(), r.direction());
-    auto b = 2.0 * dot(oc, r.direction());
-    auto c = dot(oc, oc) - radius * radius;
-    auto discriminant = b * b - 4 * a * c;
-    return (discriminant > 0);
+    auto a = r.direction().length_squared();
+    auto half_b = dot(oc, r.direction());
+    auto c = oc.length_squared() - radius*radius;
+    auto discriminant = half_b*half_b - a*c;
+    if (discriminant < 0) {
+        return -1.0;
+    } else {
+        return (-half_b - sqrt(discriminant)) /  a;
+    }
 }
 
-color ray_color(const ray &r) {
-    if (hit_sphere(point3(0, 0, -1.0), 0.5, r)) {
-        return color(1, 0, 0);
+color ray_color(const ray &r, const vec3 &normal_vec) {
+    auto t = hit_sphere(point3(0, 0, -1.0), 0.5, r);
+    if (t > 0.0) {
+        vec3 N = unit_vector(r.at(t) - normal_vec); //vec3(0, 0, -0.4));
+        return 0.5 * color(N.x() + 1, N.y() + 1, N.z() + 1);
     }
     vec3 unit_direction = unit_vector(r.direction());
-    double offset = 1.0; // was 1.0
-    auto t = 0.5 * (unit_direction.y() + offset);
+    t = 0.5 * (unit_direction.y() + 1.0);
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
 
 
 int main() {
 
-    // Open file
-    std::filebuf fb;
-    fb.open("../image.ppm", std::ios::out);
-    std::ostream os(&fb);
-
-
     // Image
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 600;
+    const int image_width = 800;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
 
     // Camera
@@ -48,21 +49,37 @@ int main() {
     auto vertical = vec3(0, viewport_height, 0);
     auto lower_left_corner = origin - horizontal / 2 - vertical / 2 - vec3(0, 0, focal_length);
 
-    // Render
+    // Animation
 
-    os << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+    int image_num = -1;
+    float val;
+    for (int ival = -3000; ival <= -2000; ival++) {
+        val = ival / 5'000.0;
+        image_num += 1;
+        // Open file
+        std::filebuf fb;
+        char file_name [100];
+        std::snprintf(file_name, 100, "../images/image%04d.ppm", image_num);
+        fb.open(file_name, std::ios::out);
+        std::ostream os(&fb);
 
-    for (int j = image_height - 1; j >= 0; --j) {
-        std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
-        for (int i = 0; i < image_width; ++i) {
-            auto u = double(i) / (image_width - 1);
-            auto v = double(j) / (image_height - 1);
-            ray r(origin, lower_left_corner + u * horizontal + v * vertical - origin);
-            color pixel_color = ray_color(r);
-            write_color(os, pixel_color);
+        std::cerr << "\rWriting file: " << image_num  << ' ' << std::flush;
+
+        // Render
+        os << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+
+        for (int j = image_height - 1; j >= 0; --j) {
+            // std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
+            for (int i = 0; i < image_width; ++i) {
+                auto u = double(i) / (image_width - 1);
+                auto v = double(j) / (image_height - 1);
+                ray r(origin, lower_left_corner + u * horizontal + v * vertical - origin);
+                color pixel_color = ray_color(r, vec3(0, 0, val));
+                write_color(os, pixel_color);
+            }
         }
-    }
 
-    fb.close();
-    std::cerr << "\nDone.\n";
+        fb.close();
+        // std::cerr << "\nDone.\n";
+    }
 }
