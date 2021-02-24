@@ -3,6 +3,7 @@
 #include "color.h"
 #include "hittable_list.h"
 #include "sphere.h"
+#include "camera.h"
 
 #include <iostream>
 #include <fstream>
@@ -21,25 +22,20 @@ color ray_color(const ray &r, const hittable &world) {
     return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
 
-void render_image(std::string const& file_name, double i, int width) {
+void render_image(std::string const &file_name, double x, int width) {
     // Image
     const auto aspect_ratio = 16.0 / 9.0;
     const int image_width = width;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
+    const int samples_per_pixel = 10;
 
     // World
     hittable_list world;
-    world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
-    world.add(make_shared<sphere>(point3(0, -100 + i, -1), 100));
+    world.add(make_shared<sphere>(point3(0, 0, x), 0.5));
+    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
 
     // Camera
-    auto viewport_height = 2.0;
-    auto viewport_width = aspect_ratio * viewport_height;
-    auto focal_length = 1.0;
-    auto origin = point3(0, 0, 0);
-    auto horizontal = vec3(viewport_width, 0, 0);
-    auto vertical = vec3(0, viewport_height, 0);
-    auto lower_left_corner = origin - horizontal / 2 - vertical / 2 - vec3(0, 0, focal_length);
+    camera cam;
 
     // Opening file
     std::filebuf fb;
@@ -54,11 +50,14 @@ void render_image(std::string const& file_name, double i, int width) {
     for (int j = image_height - 1; j >= 0; --j) {
         // std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
         for (int i = 0; i < image_width; ++i) {
-            auto u = double(i) / (image_width - 1);
-            auto v = double(j) / (image_height - 1);
-            ray r(origin, lower_left_corner + u * horizontal + v * vertical);
-            color pixel_color = ray_color(r, world);
-            write_color(os, pixel_color);
+            color pixel_color(0, 0, 0);
+            for (int s = 0; s < samples_per_pixel; ++s) {
+                auto u = (i + random_double()) / (image_width - 1);
+                auto v = (j + random_double()) / (image_height - 1);
+                ray r = cam.get_ray(u, v);
+                pixel_color += ray_color(r, world);
+            }
+            write_color(os, pixel_color, samples_per_pixel);
         }
     }
 
@@ -70,7 +69,7 @@ int main() {
 
     // Open file
     int image_num = -1;
-    for(int ival = -35; ival < 5; ival++) {
+    for (int ival = -10; ival < 0; ival++) {
         image_num++;
 
         std::cerr << "\rWriting file: " << image_num << std::flush;
@@ -80,9 +79,11 @@ int main() {
         std::snprintf(file_name, 100, "../images/image%04d.ppm", image_num);
 
 
-        render_image(file_name, std::min(ival / 40.0, -0.125), 1'500);
+        render_image(file_name, ival / 10.0, 600);
     }
 
 //      int width = 1'500;
-//      render_image("../images/image1.ppm", -0.5, width);
+//      render_image("../images/image1.ppm", -0.5, 1'400);
+
+    return 0;
 }
