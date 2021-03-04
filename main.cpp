@@ -36,7 +36,7 @@ void render_image(std::string const &file_name, int x, int width) {
     const auto aspect_ratio = 16.0 / 9.0;
     const int image_width = width;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples_per_pixel = x;
+    const int samples_per_pixel = 100;
     const int max_depth = 50;
 
     // World
@@ -44,16 +44,23 @@ void render_image(std::string const &file_name, int x, int width) {
 
     auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
     auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
-    auto material_left = make_shared<dielectric>(1.5);
-    auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
+    auto material_left   = make_shared<dielectric>(1.5);
+    auto material_right  = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
 
-    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100, material_ground));
-    world.add(make_shared<sphere>(point3(0.0, 0.2, -1.0), 0.5, material_center));
-    world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
-    world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.7, material_right));
+    world.add(make_shared<sphere>(point3( 0.0, -100.5, -1.0), 100.0, material_ground));
+    world.add(make_shared<sphere>(point3( 0.0,    0.0, -1.0),   0.5, material_center));
+    world.add(make_shared<sphere>(point3(-1.0,    0.0, -1.0),   0.5, material_left));
+    world.add(make_shared<sphere>(point3(-1.0,    0.0, -1.0), -0.45, material_left));
+    world.add(make_shared<sphere>(point3( 1.0,    0.0, -1.0),   0.5, material_right));
 
     // Camera
-    camera cam;
+    point3 lookfrom(3, 3, 2);
+    point3 lootat(0, 0, -1);
+    vec3 vup(0, 1, 0);
+    auto dist_to_focus = (lookfrom-lootat).length();
+    auto aperture = 2.0;
+
+    camera cam(lookfrom, lootat, vup, 20, aspect_ratio, aperture, dist_to_focus);
 
     // Opening file
     std::filebuf fb;
@@ -86,7 +93,7 @@ void render_image(std::string const &file_name, int x, int width) {
 void make_animation() {
     // Open file
     int image_num = 0;
-    for (int ival = 1; ival < 100; ival++) {
+    for (int ival = 90; ival > 10; ival--) {
         image_num++;
 
         std::cerr << "\rWriting file: " << image_num << std::flush;
@@ -96,7 +103,7 @@ void make_animation() {
         std::snprintf(file_name, 100, "../images/image%04d.ppm", image_num);
 
 
-        render_image(file_name, ival , 600);
+        render_image(file_name, ival , 800);
     }
 }
 
@@ -104,7 +111,7 @@ int main() {
 
 //    make_animation();
 
-    render_image("../images/image1.ppm", 100, 800);
+    render_image("../images/image1.ppm", 100, 400);
 
     return 0;
 }
