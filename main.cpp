@@ -43,9 +43,9 @@ void render_image(std::string const &file_name, int x, int width) {
     hittable_list world;
 
     auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
-    auto material_center = make_shared<metal>(color(0.8, 0.8, 0.8));
-    auto material_left = make_shared<lambertian>(color(0.8, 0.8, 0.8));
-    auto material_right = make_shared<lambertian>(color(0.8, 0.6, 0.2));
+    auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
+    auto material_left = make_shared<dielectric>(1.5);
+    auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
 
     world.add(make_shared<sphere>(point3(0, -100.5, -1), 100, material_ground));
     world.add(make_shared<sphere>(point3(0.0, 0.2, -1.0), 0.5, material_center));
@@ -104,7 +104,7 @@ int main() {
 
 //    make_animation();
 
-    render_image("../images/image1.ppm", 100, 400);
+    render_image("../images/image1.ppm", 100, 800);
 
     return 0;
 }
