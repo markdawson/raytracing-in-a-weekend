@@ -21,7 +21,6 @@ public:
         u = unit_vector(cross(vup, w));
         v = cross(w, u);
 
-        auto focal_length = 1.0;
 
         origin = lookfrom;
         horizontal = focus_dist * viewport_width * u;
@@ -32,7 +31,10 @@ public:
     }
 
     ray get_ray(double s, double t) const {
-        return ray(origin, lower_left_corner + s*horizontal + t*vertical - origin);
+        vec3 rd = lens_radius * random_in_unit_disk();
+        vec3 offset = u * rd.x() + v * rd.y();
+
+        return ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset);
     }
 
 private:

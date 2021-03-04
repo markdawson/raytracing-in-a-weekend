@@ -111,7 +111,7 @@ int main() {
 
 //    make_animation();
 
-    render_image("../images/image1.ppm", 100, 400);
+    render_image("../images/image1.ppm", 100, 800);
 
     return 0;
 }
